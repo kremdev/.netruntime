@@ -1,18 +1,16 @@
 import type { Session } from "@/types/session";
 
-const TEN_MINUTES_MS = 40 * 1000; // 5 دقائق
-const CLEANUP_INTERVAL_MS = 20 * 1000; // كل دقيقة
+const TEN_MINUTES_MS = 40 * 1000; 
+const CLEANUP_INTERVAL_MS = 20 * 1000;  
 
-// تخزين الجلسات بشكل عالمي
 const g = globalThis as any;
 g.sessions ??= new Map<string, Session>();
 g.cleanupInterval ??= null;
 
 export const sessions: Map<string, Session> = g.sessions;
 
-// تنظيف الجلسات القديمة
 export function startSessionCleanup() {
-  if (g.cleanupInterval) return; // لا نشغل أكثر من مرة
+  if (g.cleanupInterval) return;
 
   g.cleanupInterval = setInterval(() => {
     const now = Date.now();
@@ -24,8 +22,8 @@ export function startSessionCleanup() {
         continue;
       }
       console.log(true);
-      session.child.kill(); // إيقاف الكود
-      sessions.delete(id); // حذف الجلسة
+      session.child.kill(); 
+      sessions.delete(id); 
     }
   }, CLEANUP_INTERVAL_MS);
 }
