@@ -2,7 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0
 
 WORKDIR /app
 
-RUN apt update && apt install -y nodejs npm
+RUN apt update && apt install -y curl
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt install -y nodejs
 
 COPY . .
 
