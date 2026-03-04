@@ -1,4 +1,3 @@
-// lib/runCode.ts
 export const startRun = async (code: string) => {
   const res = await fetch("/api/start", {
     method: "POST",
@@ -10,7 +9,7 @@ export const startRun = async (code: string) => {
   if (!res.ok) {
     throw new Error(data?.error ?? `HTTP ${res.status}`);
   }
-  return data;
+  return data; // يحتوي على sessionId
 };
 
 export const pollOutput = async (sessionId: string) => {

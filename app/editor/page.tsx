@@ -18,6 +18,7 @@ import Resizer from "./components/Resizer";
 import TerminalScreen from "./components/Terminal";
 
 const EditorPage = () => {
+  console.log("started")
   const [code, setCode] = useState<string>(csdefaultcode);
 
   useVSCodeTheme();
@@ -35,8 +36,10 @@ const EditorPage = () => {
     handleRun,
     handleKey,
   } = useCodeRunner(code, hasReadLine);
-
   useKeyboardShortcuts({ handleRun });
+  console.log("======================");
+console.log(output);
+  console.log("======================");
 
   return (
     <div className="flex h-screen w-screen overflow-hidden select-none bg-[#181818]">

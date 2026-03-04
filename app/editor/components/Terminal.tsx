@@ -1,6 +1,5 @@
 import { TerminalScreenProps } from "@/types/props";
 import { Terminal, Trash2 } from "lucide-react";
-import React from "react";
 
 const TerminalSecreen = ({
   isRunning,
@@ -13,6 +12,9 @@ const TerminalSecreen = ({
   setCurrentLine,
   handleKey,
 }: TerminalScreenProps) => {
+  console.log("======================");
+  console.log(output);
+  console.log("======================");
   return (
     <div className="flex flex-col flex-1 min-w-0 bg-[#1e1e1e]">
       {/* Terminal Header */}

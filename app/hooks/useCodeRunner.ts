@@ -57,20 +57,37 @@ export const useCodeRunner = (
     setSessionId(null);
     setCurrentLine("");
 
-    try {
-      const data = await startRun(code);
-      if (data.output) {
-        setOutput(data.output);
+    const maxAttempts = 3;
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const data = await startRun(code);
+        if (data.output) {
+          setOutput(data.output);
+        }
+        if (!data.done) {
+          setSessionId(data.sessionId);
+        } else {
+          setIsRunning(false);
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+        if (attempt < maxAttempts) {
+          const delay = attempt * 300;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
       }
-      if (!data.done) {
-        setSessionId(data.sessionId);
-      } else {
-        setIsRunning(false);
-      }
-    } catch (e) {
-      setOutput(`❌ Error running code. Please try again, ${e}`);
-      setIsRunning(false);
     }
+
+    setOutput(
+      `❌ Error running code after multiple attempts. Please try again.\n${String(
+        lastError,
+      )}`,
+    );
+    setIsRunning(false);
   }, [code]);
 
   const handleKey = useCallback(

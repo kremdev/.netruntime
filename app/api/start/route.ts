@@ -19,10 +19,11 @@ export async function POST(request: Request) {
     await writeFile(join(shardPath, "Shard.csproj"), csproj);
     await writeFile(join(shardPath, "Program.cs"), code);
 
-    const id = randomUUID();
+    const child = spawn("dotnet", ["run"], { cwd: shardPath });
 
+    const id = randomUUID();
     const session: Session = {
-      child: null as any,
+      child,
       shardPath,
       output: "",
       done: false,
@@ -33,63 +34,30 @@ export async function POST(request: Request) {
 
     sessions.set(id, session);
 
-    const build = spawn("dotnet", ["build", "--no-restore"], {
-      cwd: shardPath,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    
-    build.stdout.on("data", (data) => {
+    child.stdout.on("data", (data) => {
       session.output += data.toString();
+      session.lastInputAt = Date.now();
     });
 
-    build.stderr.on("data", (data) => {
+    child.stderr.on("data", (data) => {
       session.output += data.toString();
+      session.lastInputAt = Date.now();
     });
 
-    build.on("close", (code) => {
-      if (code !== 0) {
-        session.output += "\nBuild failed.";
-        session.done = true;
-        return;
-      }
-
-      const dllPath = join(shardPath, "bin", "Debug", "net8.0", "Shard.dll");
-
-      const child = spawn("dotnet", [dllPath], {
-        stdio: ["pipe", "pipe", "pipe"],
-      });
-
-      session.child = child;
-
-      child.stdout.on("data", (data) => {
-        session.output += data.toString();
-        session.lastInputAt = Date.now();
-      });
-
-      child.stderr.on("data", (data) => {
-        session.output += data.toString();
-        session.lastInputAt = Date.now();
-      });
-
-      child.on("close", async () => {
-        session.done = true;
-
-        await rm(shardPath, { recursive: true, force: true });
-      });
-
-      setTimeout(() => {
-        if (!session.done) {
-          child.kill("SIGKILL");
-          session.output += "\nProcess timed out.";
-          session.done = true;
-        }
-      }, 5000);
+    child.on("close", async () => {
+      session.done = true;
+      await rm(shardPath, { recursive: true, force: true });
+      // لا نحذف الجلسة هنا، نخلي الفرونت يسحب كل الـ output عبر /api/poll
+      // بعدها التنظيف يصير إمّا من /api/poll أو من منطق الـ cleanup الدوري
     });
+
+    // اعطِ العملية لحظات لتكتب أول مخرجاتها
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     return NextResponse.json({
       sessionId: id,
-      output: "",
-      done: false,
+      output: session.output,
+      done: session.done,
     });
   } catch (e) {
     return NextResponse.json(
