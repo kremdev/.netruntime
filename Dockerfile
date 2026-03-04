@@ -1,9 +1,9 @@
 # ---------- Base Image ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0
 
-# Install curl and Node.js 18
+# Install curl and Node.js 20
 RUN apt-get update && apt-get install -y curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
 # Set working directory
