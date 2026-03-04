@@ -6,17 +6,32 @@ RUN apt-get update && apt-get install -y curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Set working directory
 WORKDIR /app
+
+# ==============================
+# Next.js
+# ==============================
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install npm dependencies
 RUN npm install
 
-# Copy project
+# ==============================
+# .NET
+# ==============================
+
+# Copy csproj first (أفضل للـ caching)
+COPY cs/*.csproj ./cs/
+
+RUN dotnet restore ./cs/*.csproj
+
+# Copy rest of project
 COPY . .
+
+# Build .NET project
+RUN dotnet build ./cs/*.csproj -c Release
 
 # Build Next.js
 RUN npm run build
