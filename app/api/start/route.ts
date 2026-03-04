@@ -19,11 +19,10 @@ export async function POST(request: Request) {
     await writeFile(join(shardPath, "Shard.csproj"), csproj);
     await writeFile(join(shardPath, "Program.cs"), code);
 
-    const child = spawn("dotnet", ["run"], { cwd: shardPath });
-
     const id = randomUUID();
+
     const session: Session = {
-      child,
+      child: null as any,
       shardPath,
       output: "",
       done: false,
@@ -34,31 +33,67 @@ export async function POST(request: Request) {
 
     sessions.set(id, session);
 
-    child.stdout.on("data", (data) => {
-      session.output += data.toString();
-      session.lastInputAt = Date.now();
-      console.log(session.lastInputAt.toString());
-    });
-
-    child.stderr.on("data", (data) => {
-      session.output += data.toString();
-      session.lastInputAt = Date.now();
+    const build = spawn("dotnet", ["build", "--no-restore"], {
+      cwd: shardPath,
+      stdio: ["pipe", "pipe", "pipe"],
     });
     
-    child.on("close", async () => {
-      session.done = true;
-      await rm(shardPath, { recursive: true, force: true });
-      sessions.delete(id);
+    build.stdout.on("data", (data) => {
+      session.output += data.toString();
+    });
+
+    build.stderr.on("data", (data) => {
+      session.output += data.toString();
+    });
+
+    build.on("close", (code) => {
+      if (code !== 0) {
+        session.output += "\nBuild failed.";
+        session.done = true;
+        return;
+      }
+
+      const dllPath = join(shardPath, "bin", "Debug", "net8.0", "Shard.dll");
+
+      const child = spawn("dotnet", [dllPath], {
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      session.child = child;
+
+      child.stdout.on("data", (data) => {
+        session.output += data.toString();
+        session.lastInputAt = Date.now();
+      });
+
+      child.stderr.on("data", (data) => {
+        session.output += data.toString();
+        session.lastInputAt = Date.now();
+      });
+
+      child.on("close", async () => {
+        session.done = true;
+
+        await rm(shardPath, { recursive: true, force: true });
+      });
+
+      setTimeout(() => {
+        if (!session.done) {
+          child.kill("SIGKILL");
+          session.output += "\nProcess timed out.";
+          session.done = true;
+        }
+      }, 5000);
     });
 
     return NextResponse.json({
       sessionId: id,
-      output: session.output,
-      done: session.done,
+      output: "",
+      done: false,
     });
   } catch (e) {
     return NextResponse.json(
-      { error: "Server Error", details: e },
+      { error: "Server Error", details: String(e) },
       { status: 500 },
     );
   }
