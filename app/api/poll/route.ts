@@ -8,7 +8,6 @@ export async function POST(request: Request) {
   if (!session)
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
 
-  // أي طلب polling نعتبره نشاط، حتى لو ما فيه مخرجات جديدة
   session.lastInputAt = Date.now();
 
   const newOutput = session.output.slice(session.lastSent);
