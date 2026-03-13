@@ -47,11 +47,8 @@ export async function POST(request: Request) {
     child.on("close", async () => {
       session.done = true;
       await rm(shardPath, { recursive: true, force: true });
-      // لا نحذف الجلسة هنا، نخلي الفرونت يسحب كل الـ output عبر /api/poll
-      // بعدها التنظيف يصير إمّا من /api/poll أو من منطق الـ cleanup الدوري
     });
 
-    // اعطِ العملية لحظات لتكتب أول مخرجاتها
     await new Promise((resolve) => setTimeout(resolve, 150));
 
     return NextResponse.json({
