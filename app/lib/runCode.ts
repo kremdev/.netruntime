@@ -9,7 +9,7 @@ export const startRun = async (code: string) => {
   if (!res.ok) {
     throw new Error(data?.error ?? `HTTP ${res.status}`);
   }
-  return data; // يحتوي على sessionId
+  return data; 
 };
 
 export const pollOutput = async (sessionId: string) => {
