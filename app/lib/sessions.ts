@@ -18,16 +18,12 @@ export function startSessionCleanup() {
     for (const [id, session] of sessions) {
       if (now - session.lastInputAt < TEN_MINUTES_MS) continue;
 
-      // لو العملية ما زالت شغالة، نوقفها
       if (session.child.exitCode == null) {
         try {
           session.child.kill();
-        } catch {
-          // نتجاهل أي خطأ هنا
-        }
+        } catch (e) { console.error(e) };
       }
 
-      // في كل الأحوال، نحذف الجلسة بعد فترة الخمول
       sessions.delete(id);
     }
   }, CLEANUP_INTERVAL_MS);
